@@ -13,7 +13,7 @@ No build step for the UI: it is plain HTML, CSS, and JavaScript, with data loade
 
 ## Try it
 
-If a demo is deployed from this repository, open the **`app/`** path on the host (for example, GitHub Pages serves it as `/repository-name/app/` on a project site).
+**[Live demo (GitHub Pages)](https://deborahharrus.github.io/mmcif-dictionary-explorer/app/)**
 
 ## Run locally
 
@@ -26,8 +26,18 @@ python -m http.server 8765
 
 Then visit `http://127.0.0.1:8765/` in your browser.
 
-Runtime data lives in **`app/data/dictionary.json`**. To regenerate it from an mmCIF dictionary (`.dic`) with Python and [gemmi](https://github.com/project-gemmi/gemmi), see **[DEVELOPMENT.md](DEVELOPMENT.md)**. That document also describes hosting on GitHub Pages, project layout, and licensing of dictionary files.
+Runtime data lives in **`app/data/dictionary.json`**. To regenerate it from an mmCIF dictionary (`.dic`) with Python and [gemmi](https://github.com/project-gemmi/gemmi), see **[DEVELOPMENT.md](DEVELOPMENT.md)**.
 
-## Licence
+## Contributing
 
-Use this project’s code on your own terms. The mmCIF dictionary is provided by wwPDB/PDBx; follow their terms when redistributing `.dic` or derived data.
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## License
+
+This project’s source code is released under the [MIT License](LICENSE).
+
+This repository **does not** include the PDBx/mmCIF source **`.dic`** file; only the derived **`app/data/dictionary.json`** is distributed here. That JSON still reflects [wwPDB/PDBx](https://mmcif.wwpdb.org/) dictionary content—follow their licensing and citation requirements when sharing or reusing that data.
+
+## Author
+
+Deborah Harrus, Protein Data Bank in Europe (PDBe), EMBL-EBI
