@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mmCIF dictionary explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <style>
+    :root {
+      --bg: #12151a;
+      --panel: #1a1f27;
+      --border: #2a3140;
+      --text: #e8e6e1;
+      --muted: #adb2ba;
+      --accent: #c9a227;
+      --accent-dim: #8a701a;
+      --link: #6eb8c0;
+      --node: #3d4f5c;
+      --nodehi: #c9a227;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Source Serif 4", Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      flex: 0 0 auto;
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      background: linear-gradient(180deg, #1e232c 0%, var(--bg) 100%);
+    }
+    header h1 {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 1.35rem;
+      letter-spacing: 0.02em;
+    }
+    header .meta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+    .toolbar label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
+    input[type="search"] {
+      width: min(320px, 40vw);
+      padding: 0.4rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--text);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+    }
+    input[type="search"]:focus-visible,
+    select:focus-visible,
+    button:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-color: var(--accent-dim);
+    }
+    .skip-link {
+      position: absolute;
+      left: 0.75rem;
+      top: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      background: var(--accent);
+      color: #12151a;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+      border-radius: 3px;
+      z-index: 100;
+      transform: translateY(-120%);
+      transition: transform 0.15s ease;
+    }
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skip-link { transition: none; }
+      aside.detail-aside { transition: none; }
+    }
+    .header-tools {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 1rem 1.5rem;
+      padding-top: 0.5rem;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .field label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
+    .hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 28rem;
+      line-height: 1.35;
+    }
+    select#categorySelect {
+      min-width: min(360px, 85vw);
+      padding: 0.4rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--text);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    .graph-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+    }
+    .graph-legend-block {
+      flex: 0 0 auto;
+      max-height: min(220px, 30vh);
+      overflow: auto;
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      background: #151920;
+    }
+    .graph-legend-block.legend-collapsed {
+      max-height: none;
+      overflow: visible;
+    }
+    .graph-legend-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .graph-legend-heading {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .legend-toggle {
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #0f1217;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.7rem;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+    .legend-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+    .graph-legend-panel[hidden] {
+      display: none !important;
+    }
+    .graph-legend-intro {
+      margin: 0;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .graph-legend-groups {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 0.3rem 0.65rem;
+    }
+    .graph-legend-groups li {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+    .graph-legend-groups .swatch {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+    .graph-legend-size {
+      margin: 0.45rem 0 0;
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .graph-legend-intro code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.85em;
+      color: var(--link);
+      font-weight: 500;
+    }
+    .graph-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, #1e262e 0%, var(--bg) 55%),
+        var(--bg);
+    }
+    #graph {
+      width: 100%;
+      height: 100%;
+      min-height: 180px;
+    }
+    #graph:focus { outline: none; }
+    #graph:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+    aside.detail-aside {
+      flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      min-height: 0;
+      width: min(440px, 42vw);
+      transition: width 0.2s ease;
+    }
+    aside.detail-aside.collapsed {
+      width: 32px;
+      min-width: 32px;
+    }
+    .aside-toggle {
+      flex: 0 0 32px;
+      width: 32px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-right: 1px solid var(--border);
+      background: #151920;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      align-self: stretch;
+    }
+    .aside-toggle:hover {
+      background: #1a1f27;
+      color: var(--accent);
+    }
+    .aside-panel {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    aside.detail-aside.collapsed .aside-panel {
+      display: none;
+    }
+    .detail-head {
+      padding: 1rem 1.1rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-head .kind {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+    .detail-head h2 {
+      margin: 0.35rem 0 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 1.45rem;
+      word-break: break-word;
+    }
+    .detail-body {
+      flex: 1;
+      overflow: auto;
+      padding: 1rem 1.1rem 2rem;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .detail-body:focus { outline: none; }
+    .detail-body:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+    .detail-body h3 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 1.05rem;
+      margin: 1.25rem 0 0.4rem;
+      color: var(--link);
+    }
+    .detail-body p { margin: 0.4rem 0; }
+    .mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      background: #0f1217;
+      padding: 0.12rem 0.35rem;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+    pre, .case-block {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.76rem;
+      background: #0f1217;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.65rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0.5rem 0;
+    }
+    ul.items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 220px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #0f1217;
+    }
+    ul.items li {
+      padding: 0;
+      border-bottom: 1px solid #222831;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.74rem;
+    }
+    ul.items li:last-child { border-bottom: none; }
+    .item-row {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.35rem 0.6rem;
+      margin: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+    .item-row:hover { background: #222831; color: var(--accent); }
+    .pill {
+      display: inline-block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.68rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      background: #0f1217;
+      border: 1px solid var(--border);
+      margin: 0.15rem 0.35rem 0.15rem 0;
+    }
+    .empty-state {
+      color: var(--muted);
+      font-style: italic;
+    }
+    #err {
+      color: #ff8a8a;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+      padding: 0 1rem;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#detailBody">Skip to details</a>
+  <div id="a11y-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <header aria-label="Dictionary explorer header">
+    <h1>mmCIF dictionary explorer</h1>
+    <span class="meta" id="versionMeta"></span>
+    <span id="err" role="alert" aria-live="assertive"></span>
+    <div class="header-tools">
+      <div class="field">
+        <label for="q">Filter the graph</label>
+        <input
+          type="search"
+          id="q"
+          placeholder="category or item…"
+          autocomplete="off"
+          aria-describedby="search-hint"
+        />
+        <span id="search-hint" class="hint">
+          Hides nodes and edges that do not match. Searches category id, description text, and item names. The category menu below always lists every category.
+        </span>
+      </div>
+      <div class="field">
+        <label for="categorySelect">Open category</label>
+        <select id="categorySelect" aria-describedby="cat-hint">
+          <option value="">— Choose a category —</option>
+        </select>
+        <span id="cat-hint" class="hint">
+          Standard drop-down with all categories; fully keyboard- and screen-reader-friendly. The graph supports pointing devices; see its legend for size and color keys.
+        </span>
+      </div>
+    </div>
+  </header>
+  <main id="main-content" aria-label="Dictionary graph and details">
+    <section
+      class="graph-column"
+      aria-labelledby="graph-legend-title"
+    >
+      <div class="graph-legend-block" id="graph-legend-block">
+        <div class="graph-legend-head">
+          <h2 class="graph-legend-heading" id="graph-legend-title">Graph legend</h2>
+          <button
+            type="button"
+            class="legend-toggle"
+            id="legendToggle"
+            aria-expanded="true"
+            aria-controls="graph-legend-panel"
+          >
+            Hide
+          </button>
+        </div>
+        <div class="graph-legend-panel" id="graph-legend-panel">
+          <p class="graph-legend-intro" id="graph-legend-intro">
+            Each dot is a dictionary category. Dot diameter scales with how many parent or child link rows involve that category in <code>_pdbx_item_linked_group_list</code>. Hue indicates the category’s primary PDBx group (first <code>category_group</code> that is not <code>inclusive_group</code>, so the umbrella group does not paint every node the same colour).
+          </p>
+          <ul class="graph-legend-groups" id="graphLegendList" aria-label="Category group colors"></ul>
+          <p class="graph-legend-size" id="graph-legend-size-note"></p>
+        </div>
+      </div>
+      <div class="graph-wrap">
+        <div
+          id="graph"
+          tabindex="0"
+          role="img"
+          aria-label="Interactive category link diagram: dot size reflects number of dictionary links; color reflects PDBx category group. Use a pointing device to select a node, or use Open category in the header for keyboard navigation."
+          aria-describedby="graph-legend-intro"
+        ></div>
+      </div>
+    </section>
+    <aside class="detail-aside" id="detailAside" aria-labelledby="detailTitle">
+      <button
+        type="button"
+        class="aside-toggle"
+        id="asideToggle"
+        aria-expanded="true"
+        aria-controls="asidePanel"
+        title="Collapse details panel"
+      >
+        <span aria-hidden="true"><</span>
+      </button>
+      <div class="aside-panel" id="asidePanel">
+        <div class="detail-head">
+          <p class="kind" id="detailKind">Overview</p>
+          <h2 id="detailTitle">Select a category or item</h2>
+        </div>
+        <div class="detail-body" id="detailBody" tabindex="-1">
+          <p class="empty-state">
+            Choose a category from the header menu, or activate a node in the graph (mouse). Category links follow PDBx parent/child relationships (foreign keys). Use “Filter the graph” to simplify the diagram without changing the category menu.
+          </p>
+        </div>
+      </div>
+    </aside>
+  </main>
+  <script>
+    (async function () {
+      const errEl = document.getElementById("err");
+      const announceEl = document.getElementById("a11y-announce");
+      const categorySelect = document.getElementById("categorySelect");
+      const detailBodyEl = document.getElementById("detailBody");
+      const graphLegendBlock = document.getElementById("graph-legend-block");
+      const graphLegendPanel = document.getElementById("graph-legend-panel");
+      const legendToggle = document.getElementById("legendToggle");
+      const detailAside = document.getElementById("detailAside");
+      const asideToggle = document.getElementById("asideToggle");
+
+      function setLegendExpanded(expanded) {
+        graphLegendPanel.hidden = !expanded;
+        legendToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+        legendToggle.textContent = expanded ? "Hide" : "Show";
+        graphLegendBlock.classList.toggle("legend-collapsed", !expanded);
+      }
+
+      legendToggle.addEventListener("click", function () {
+        const next = legendToggle.getAttribute("aria-expanded") !== "true";
+        setLegendExpanded(next);
+      });
+
+      function setAsideExpanded(expanded) {
+        detailAside.classList.toggle("collapsed", !expanded);
+        asideToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+        asideToggle.title = expanded ? "Collapse details panel" : "Expand details panel";
+        asideToggle.setAttribute(
+          "aria-label",
+          expanded ? "Collapse details panel" : "Expand details panel"
+        );
+        const chev = asideToggle.querySelector("[aria-hidden]");
+        if (chev) chev.textContent = expanded ? ">" : "<";
+      }
+
+      asideToggle.addEventListener("click", function () {
+        const next = asideToggle.getAttribute("aria-expanded") !== "true";
+        setAsideExpanded(next);
+      });
+
+      function a11ySay(msg) {
+        announceEl.textContent = "";
+        requestAnimationFrame(function () {
+          announceEl.textContent = msg;
+        });
+      }
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const dataUrl = "data/dictionary.json";
+      let DATA;
+      try {
+        const res = await fetch(dataUrl);
+        if (!res.ok) throw new Error(res.status + " " + res.statusText);
+        DATA = await res.json();
+      } catch (e) {
+        errEl.textContent = "Could not load " + dataUrl + " — run a local server from the app folder (e.g. python -m http.server 8080).";
+        return;
+      }
+
+      document.getElementById("versionMeta").textContent =
+        DATA.dictionary_file + " · v" + DATA.dictionary_version;
+
+      const cats = DATA.categories;
+      const items = DATA.items;
+      const catIds = Object.keys(cats).sort();
+
+      catIds.forEach(function (id) {
+        const o = document.createElement("option");
+        o.value = id;
+        o.textContent = id;
+        categorySelect.appendChild(o);
+      });
+
+      const edgeRows = DATA.category_links;
+
+      function primaryGroupId(catId) {
+        const g = cats[catId].category_groups;
+        if (!g || !g.length) return "uncategorized";
+        const skip = "inclusive_group";
+        for (let i = 0; i < g.length; i++) {
+          if (g[i] !== skip) return g[i];
+        }
+        return g[0];
+      }
+
+      const degree = {};
+      catIds.forEach(function (id) {
+        degree[id] = 0;
+      });
+      edgeRows.forEach(function (e) {
+        degree[e.parent]++;
+        degree[e.child]++;
+      });
+
+      const uniqueGroups = [...new Set(catIds.map(primaryGroupId))].sort();
+      const groupHue = {};
+      uniqueGroups.forEach(function (g, i) {
+        groupHue[g] = Math.round((i * 360) / Math.max(1, uniqueGroups.length));
+      });
+
+      function groupColorStyle(gid) {
+        const h = groupHue[gid] ?? 0;
+        return {
+          background: "hsl(" + h + ", 58%, 46%)",
+          border: "hsla(" + h + ", 40%, 78%, 0.55)",
+          highlight: { background: "#c9a227", border: "#f5e6b0" },
+          hover: { background: "hsl(" + h + ", 58%, 54%)", border: "#ffffff" },
+        };
+      }
+
+      const nodeVisual = {};
+      catIds.forEach(function (id) {
+        const pg = primaryGroupId(id);
+        const deg = degree[id];
+        nodeVisual[id] = {
+          degree: deg,
+          primaryGroup: pg,
+          value: 0.35 + Math.sqrt(deg),
+          color: groupColorStyle(pg),
+        };
+      });
+
+      function nodeTooltip(id) {
+        const v = nodeVisual[id];
+        const c = cats[id];
+        const bits = [
+          id,
+          v.degree + " link row" + (v.degree === 1 ? "" : "s"),
+          "primary group: " + v.primaryGroup,
+        ];
+        if (c.description) {
+          bits.push(
+            c.description.slice(0, 200) + (c.description.length > 200 ? "…" : "")
+          );
+        }
+        return bits.join(". ");
+      }
+
+      function dataSetNode(id) {
+        const v = nodeVisual[id];
+        return {
+          id: id,
+          label: id,
+          title: nodeTooltip(id),
+          value: v.value,
+          color: v.color,
+          font: { color: "#e8e6e1", size: 11, face: "IBM Plex Mono" },
+        };
+      }
+
+      const groupCounts = {};
+      catIds.forEach(function (id) {
+        const pg = primaryGroupId(id);
+        groupCounts[pg] = (groupCounts[pg] || 0) + 1;
+      });
+      const legendUl = document.getElementById("graphLegendList");
+      uniqueGroups.forEach(function (g) {
+        const li = document.createElement("li");
+        const sw = document.createElement("span");
+        sw.className = "swatch";
+        sw.style.background = groupColorStyle(g).background;
+        sw.setAttribute("aria-hidden", "true");
+        li.appendChild(sw);
+        const lab = document.createElement("span");
+        lab.textContent = g + " (" + (groupCounts[g] || 0) + " categories)";
+        li.appendChild(lab);
+        legendUl.appendChild(li);
+      });
+      const degList = catIds.map(function (id) {
+        return degree[id];
+      });
+      const dmin = Math.min.apply(null, degList);
+      const dmax = Math.max.apply(null, degList);
+      document.getElementById("graph-legend-size-note").textContent =
+        "Raw link row counts: " +
+        dmin +
+        "–" +
+        dmax +
+        " per category. Visual size uses the square root of that count plus a small baseline, so hubs read larger and categories with no listed links stay smallest.";
+
+      const nodes = new vis.DataSet(catIds.map(dataSetNode));
+      const edges = new vis.DataSet(
+        edgeRows.map((e, i) => ({
+          id: "e" + i,
+          from: e.parent,
+          to: e.child,
+          arrows: "to",
+          color: { color: "#5a6578", highlight: "#c9a227" },
+          title:
+            e.parent_item + " → " + e.child_item + " (group " + e.link_group_id + ")",
+        }))
+      );
+
+      const container = document.getElementById("graph");
+      const net = new vis.Network(
+        container,
+        { nodes, edges },
+        {
+          layout: { improvedLayout: false },
+          physics: {
+            forceAtlas2Based: {
+              gravitationalConstant: -42,
+              centralGravity: 0.008,
+              springLength: 95,
+              springConstant: 0.18,
+              avoidOverlap: 0.22,
+            },
+            solver: "forceAtlas2Based",
+            stabilization: { iterations: reduceMotion ? 60 : 200 },
+          },
+          interaction: { hover: true, tooltipDelay: 120 },
+          nodes: {
+            shape: "dot",
+            borderWidth: 2,
+            borderWidthSelected: 3,
+            scaling: {
+              min: 6,
+              max: 34,
+              label: {
+                enabled: true,
+                min: 8,
+                max: 14,
+                drawThreshold: 5,
+              },
+            },
+          },
+        }
+      );
+
+      function esc(s) {
+        const d = document.createElement("div");
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function showCategory(catId, opts) {
+        opts = opts || {};
+        const c = cats[catId];
+        categorySelect.value = catId;
+        document.getElementById("detailKind").textContent = "Category";
+        document.getElementById("detailTitle").textContent = catId;
+        const out = [];
+        if (c.mandatory_code)
+          out.push("<p><span class='muted'>Mandatory</span> <span class='mono'>" + esc(c.mandatory_code) + "</span></p>");
+        if (c.description) out.push("<h3>Description</h3><p>" + esc(c.description) + "</p>");
+        const names = c.item_names || [];
+        if (names.length) {
+          out.push("<h3>Items (" + names.length + ")</h3><ul class='items' id='itemList'></ul>");
+        }
+        if (c.examples && c.examples.length) {
+          out.push("<h3>Category examples</h3>");
+          c.examples.forEach((ex, j) => {
+            if (ex.detail) out.push("<p><em>" + esc(ex.detail) + "</em></p>");
+            if (ex.case) out.push("<div class='case-block'>" + esc(ex.case) + "</div>");
+          });
+        }
+        if (c.category_keys && c.category_keys.length) {
+          out.push("<h3>Category keys</h3><p>");
+          c.category_keys.forEach((k) => out.push("<span class='mono'>" + esc(k) + "</span> "));
+          out.push("</p>");
+        }
+        if (c.category_groups && c.category_groups.length) {
+          out.push("<h3>Category groups</h3><p>");
+          c.category_groups.forEach((g) => out.push("<span class='pill'>" + esc(g) + "</span>"));
+          out.push("</p>");
+        }
+        const linksIn = DATA.category_links.filter((L) => L.child === catId);
+        const linksOut = DATA.category_links.filter((L) => L.parent === catId);
+        if (linksIn.length) {
+          out.push("<h3>Incoming links (parent categories)</h3><ul style='padding-left:1.1rem;margin:0.3rem 0'>");
+          linksIn.forEach((L) => {
+            out.push(
+              "<li><span class='mono'>" +
+                esc(L.parent) +
+                "</span> — " +
+                esc(L.parent_item) +
+                " → " +
+                esc(L.child_item) +
+                "</li>"
+            );
+          });
+          out.push("</ul>");
+        }
+        if (linksOut.length) {
+          out.push("<h3>Outgoing links (child categories)</h3><ul style='padding-left:1.1rem;margin:0.3rem 0'>");
+          linksOut.forEach((L) => {
+            out.push(
+              "<li><span class='mono'>" +
+                esc(L.child) +
+                "</span> — " +
+                esc(L.parent_item) +
+                " → " +
+                esc(L.child_item) +
+                "</li>"
+            );
+          });
+          out.push("</ul>");
+        }
+        detailBodyEl.innerHTML = out.join("");
+        const ul = document.getElementById("itemList");
+        if (ul) {
+          names.forEach(function (name) {
+            const li = document.createElement("li");
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "item-row";
+            btn.textContent = name;
+            btn.addEventListener("click", function () {
+              showItem(name);
+            });
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+        }
+
+        const blurb = (c.description || "").replace(/\s+/g, " ").trim().slice(0, 280);
+        const nv = nodeVisual[catId];
+        const graphBits = nv
+          ? nv.degree +
+            " dictionary link row" +
+            (nv.degree === 1 ? "" : "s") +
+            "; primary group " +
+            nv.primaryGroup +
+            ". "
+          : "";
+        a11ySay("Category " + catId + ". " + graphBits + (blurb || ""));
+        if (opts.focusDetail) {
+          detailBodyEl.focus({ preventScroll: true });
+        }
+      }
+
+      function showItem(name) {
+        const it = items[name];
+        document.getElementById("detailKind").textContent = "Item";
+        document.getElementById("detailTitle").textContent = name;
+        if (!it) {
+          categorySelect.value = "";
+          detailBodyEl.innerHTML = "<p class='empty-state'>No definition found.</p>";
+          a11ySay("No definition found for item " + name);
+          return;
+        }
+        if (it.category_id) categorySelect.value = it.category_id;
+        const out = [];
+        if (it.category_id)
+          out.push(
+            "<p>Category <a href='#' class='mono' id='toCat' style='color:var(--link)' aria-label=\"Open category " +
+              esc(it.category_id) +
+              "\">" +
+              esc(it.category_id) +
+              "</a></p>"
+          );
+        if (it.mandatory_code)
+          out.push("<p>Mandatory <span class='mono'>" + esc(it.mandatory_code) + "</span></p>");
+        if (it.type_code) out.push("<p>Type <span class='mono'>" + esc(it.type_code) + "</span></p>");
+        if (it.description) out.push("<h3>Description</h3><p>" + esc(it.description) + "</p>");
+        if (it.enumeration && it.enumeration.length) {
+          out.push(
+            "<h3>Allowed values</h3><table style='width:100%;border-collapse:collapse;font-size:0.82rem'>" +
+              '<caption class="sr-only">Enumerated values for ' +
+              esc(name) +
+              "</caption><thead><tr><th scope=\"col\">Value</th><th scope=\"col\">Meaning</th></tr></thead><tbody>"
+          );
+          it.enumeration.forEach(function (en) {
+            out.push(
+              "<tr><td style='vertical-align:top;padding:0.2rem;border-bottom:1px solid #222831' class='mono'>" +
+                esc(en.value) +
+                "</td><td style='vertical-align:top;padding:0.2rem;border-bottom:1px solid #222831'>" +
+                (en.detail ? esc(en.detail) : "") +
+                "</td></tr>"
+            );
+          });
+          out.push("</tbody></table>");
+        }
+        if (it.examples && it.examples.length) {
+          out.push("<h3>Examples</h3>");
+          it.examples.forEach((x) => out.push("<pre>" + esc(x) + "</pre>"));
+        }
+        detailBodyEl.innerHTML = out.join("");
+        const a = document.getElementById("toCat");
+        if (a && it.category_id) {
+          a.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            showCategory(it.category_id);
+            net.selectNodes([it.category_id]);
+            net.focus(it.category_id, { scale: 1.05, animation: !reduceMotion });
+          });
+        }
+
+        const bits = [name];
+        if (it.type_code) bits.push("type " + it.type_code);
+        const dBrief = (it.description || "").replace(/\s+/g, " ").trim().slice(0, 240);
+        if (dBrief) bits.push(dBrief);
+        a11ySay(bits.join(". "));
+      }
+
+      net.on("click", function (p) {
+        if (p.nodes.length === 1) showCategory(p.nodes[0]);
+      });
+
+      function categoriesMatchItems(catId, q) {
+        const names = cats[catId] && cats[catId].item_names;
+        if (!names) return false;
+        return names.some((n) => n.toLowerCase().includes(q));
+      }
+
+      document.getElementById("q").addEventListener("input", (ev) => {
+        const q = ev.target.value.trim().toLowerCase();
+        if (!q) {
+          nodes.update(catIds.map((id) => ({ ...dataSetNode(id), hidden: false })));
+          edges.update(
+            edgeRows.map((e, i) => ({ id: "e" + i, hidden: false }))
+          );
+          return;
+        }
+        nodes.update(
+          catIds.map((id) => {
+            const c = cats[id];
+            const hay = (
+              id +
+              " " +
+              (c.description || "") +
+              " " +
+              (c.item_names || []).join(" ")
+            ).toLowerCase();
+            const hit = hay.includes(q);
+            if (hit) return { ...dataSetNode(id), hidden: false };
+            return { id: id, hidden: true };
+          })
+        );
+        edges.update(
+          edgeRows.map((e, i) => {
+            const hit =
+              e.parent.toLowerCase().includes(q) ||
+              e.child.toLowerCase().includes(q);
+            const pItems = categoriesMatchItems(e.parent, q);
+            const cItems = categoriesMatchItems(e.child, q);
+            return {
+              id: "e" + i,
+              hidden: !(hit || pItems || cItems),
+            };
+          })
+        );
+      });
+
+      categorySelect.addEventListener("change", function () {
+        const v = categorySelect.value;
+        if (!v) return;
+        showCategory(v, { focusDetail: true });
+        net.selectNodes([v]);
+        net.focus(v, { scale: 1.05, animation: !reduceMotion });
+      });
+
+      net.once("stabilizationIterationsDone", function () {
+        net.setOptions({ physics: false });
+      });
+    })();
+  </script>
+</body>
+</html>
