@@ -1,17 +1,22 @@
 [
   {
-    "id": "default",
-    "label": "mmcif_pdbx_v50.json (default)",
+    "id": "pdbx_v50",
+    "label": "PDBx/mmCIF Version 5.0",
     "file": "mmcif_pdbx_v50.json"
   },
   {
-    "id": "investigation",
-    "label": "mmcif_investigation.json",
-    "file": "mmcif_investigation.json"
+    "id": "pdbx_v5_next",
+    "label": "PDBx/mmCIF Version 5.0 Development Version",
+    "file": "mmcif_pdbx_v5_next.json"
+  },
+  {
+    "id": "investigation_ligscreen",
+    "label": "InvestigationCIF Extension",
+    "file": "mmcif_investigation_ligscreen.json"
   },
   {
     "id": "ihm_ext",
-    "label": "mmcif_ihm_ext.json",
+    "label": "IHMCIF Extension",
     "file": "mmcif_ihm_ext.json"
   }
 ]

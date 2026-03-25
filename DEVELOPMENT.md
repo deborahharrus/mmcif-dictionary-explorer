@@ -13,7 +13,7 @@ The published site loads **`app/data/mmcif_pdbx_v50.json`** by default, but the 
   pip install -r requirements.txt
   ```
 
-Note: the upstream `.dic` files are not included in this published repo (they are gitignored). Download/copy the needed `.dic` files into `dictionaries/` locally before running `scripts/build_dictionary_json.py` (e.g. `mmcif_pdbx_v50.dic`, `mmcif_ihm_ext.dic`, `mmcif_investigation.dic`).
+Note: the upstream `.dic` files are not included in this published repo. Download them from [wwPDB mmCIF dictionary downloads](https://mmcif.wwpdb.org/dictionaries/downloads.html) and copy the needed `.dic` files into `dictionaries/` locally before running `scripts/build_dictionary_json.py` (e.g. `mmcif_pdbx_v50.dic`, `mmcif_pdbx_v5_next.dic`, `mmcif_investigation_ligscreen.dic`, `mmcif_ihm_ext.dic`).
 
 ## Build `*.json`
 

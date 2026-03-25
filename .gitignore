@@ -9,6 +9,7 @@ env/
 
 # PDBx dictionary source (not distributed; obtain separately for local rebuilds)
 dictionaries/*.dic
+dictionaries/nn/*.dic
 
 # OS / editor
 .DS_Store

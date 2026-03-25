@@ -28,13 +28,14 @@ Tip: after launching, use the dictionary drop-down in the header to switch betwe
 
 ### Dictionary JSON sources
 
-The JSON files under `app/data/` are derived from the upstream `.dic` dictionaries they were downloaded from or built from:
+Upstream `.dic` files used to build the JSON in `app/data/` are obtained from the wwPDB mmCIF dictionary downloads page: [mmcif.wwpdb.org/dictionaries/downloads.html](https://mmcif.wwpdb.org/dictionaries/downloads.html).
 
-| JSON artifact | Derived from `.dic` source | `dictionary_version` (in repo) |
-|---|---|---|
-| `app/data/mmcif_pdbx_v50.json` | wwPDB/PDBx [`mmcif_pdbx_v50.dic`](https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic) | `5.411` |
-| `app/data/mmcif_ihm_ext.json` | IHMCIF [`mmcif_ihm_ext.dic`](https://github.com/ihmwg/IHMCIF/blob/master/dist/mmcif_ihm_ext.dic) | `1.28` |
-| `app/data/mmcif_investigation.json` | InvestigationCIF [`mmcif_investigation.dic`](https://github.com/PDBeurope/InvestigationCIF/blob/main/dist/mmcif_investigation.dic) | `1.0.6.1` |
+| Dictionary | Version in this repo | Description | Source `.dic` | JSON |
+|---|---|---|---|---|
+| PDBx/mmCIF Version 5.0 | `5.412` | PDB Exchange Dictionary (PDBx/mmCIF) Version 5.0 supporting the data files in the current PDB archive | `mmcif_pdbx_v50.dic` | `app/data/mmcif_pdbx_v50.json` |
+| PDBx/mmCIF Version 5.0 Development Version | `5.420` | PDB Exchange Dictionary (PDBx/mmCIF) Development Version | `mmcif_pdbx_v5_next.dic` | `app/data/mmcif_pdbx_v5_next.json` |
+| InvestigationCIF Extension | `1.0.6.1` | InvestigationCIF Extension, maintained at [github.com/PDBeurope/InvestigationCIF](https://github.com/PDBeurope/InvestigationCIF). It captures the relationship between related structures that are part of the same project. | `mmcif_investigation_ligscreen.dic` | `app/data/mmcif_investigation_ligscreen.json` |
+| IHMCIF extension | `1.28` | IHMCIF Extension, maintained at [github.com/ihmwg/IHMCIF](https://github.com/ihmwg/IHMCIF). Integrative structures that are compliant to this extension dictionary can be deposited to the PDB-Dev prototype deposition and archiving system ([pdb-ihm.wwpdb.org](https://pdb-ihm.wwpdb.org)). | `mmcif_ihm_ext.dic` | `app/data/mmcif_ihm_ext.json` |
 
 ## How to use the UI
 

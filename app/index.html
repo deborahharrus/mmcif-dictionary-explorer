@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>mmCIF dictionary explorer</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet" />
@@ -607,7 +608,8 @@
 
       let datasets = [{ id: "default", label: defaultDatasetFile, file: defaultDatasetFile }];
       try {
-        const manifestRes = await fetch(datasetsManifestUrl);
+        // Avoid stale manifest options when editing datasets.json locally (browsers may cache JSON GETs).
+        const manifestRes = await fetch(datasetsManifestUrl, { cache: "no-store" });
         if (manifestRes.ok) {
           const parsed = await manifestRes.json();
           if (Array.isArray(parsed) && parsed.length) {
@@ -656,7 +658,8 @@
 
       const dataUrl = toDataUrl(requestedDatasetFile);
       try {
-        const res = await fetch(dataUrl);
+        // Same rationale as datasets.json: avoid a stale cached dictionary after rebuilds.
+        const res = await fetch(dataUrl, { cache: "no-store" });
         if (!res.ok) throw new Error(res.status + " " + res.statusText);
         DATA = await res.json();
       } catch (e) {
@@ -671,7 +674,7 @@
         datasetSelect.options[datasetSelect.selectedIndex]?.textContent || requestedDatasetFile;
       const dictVersion = DATA.dictionary_version ?? "?";
       document.getElementById("versionMeta").textContent =
-        selectedDatasetLabel + " · v" + dictVersion;
+        selectedDatasetLabel + " · v" + String(dictVersion);
 
       const cats = DATA.categories;
       const items = DATA.items;
