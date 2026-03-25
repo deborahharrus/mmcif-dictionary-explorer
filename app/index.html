@@ -490,7 +490,7 @@
         </div>
         <div class="graph-legend-panel" id="graph-legend-panel">
           <p class="graph-legend-intro" id="graph-legend-intro">
-            Each dot is a dictionary category. Dot diameter scales with how many parent or child link rows involve that category in <code>_pdbx_item_linked_group_list</code>. Hue indicates the category’s primary PDBx group (first <code>category_group</code> that is not <code>inclusive_group</code>, so the umbrella group does not paint every node the same colour).
+            Each dot is a dictionary category. Dot diameter scales with how many parent/child link rows involve that category: from <code>_pdbx_item_linked_group_list</code> when present, otherwise from <code>_item_linked</code> relationships in item definitions (e.g. some extension dictionaries). Hue indicates the category’s primary PDBx group (first <code>category_group</code> that is not <code>inclusive_group</code>, so the umbrella group does not paint every node the same colour).
           </p>
           <ul class="graph-legend-groups" id="graphLegendList" aria-label="Category group colors"></ul>
           <p class="graph-legend-size" id="graph-legend-size-note"></p>
@@ -628,7 +628,7 @@
           }
         }
       } catch (e) {
-        // Manifest is optional; we fall back to mmcif_pdbx_v50.json.
+        // Manifest is optional; we fall back to defaultDatasetFile.
       }
 
       const requestedDatasetFile = getRequestedDatasetFile(datasets);

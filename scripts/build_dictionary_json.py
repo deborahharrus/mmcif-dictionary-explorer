@@ -70,14 +70,70 @@ def load_item_links(block: gemmi.cif.Block) -> list[dict[str, str]]:
     return links
 
 
-def build_json(dic_path: Path) -> dict:
-    doc = gemmi.cif.read(str(dic_path))
-    block = doc.sole_block()
-    version = clean_value(block.find_value("_dictionary.version")) or ""
+def _iter_item_linked_pairs(frame: gemmi.cif.Frame) -> list[tuple[str, str]]:
+    """Yield (child_item_name, parent_item_name) from _item_linked in an item save frame."""
+    tab = frame.find_mmcif_category("_item_linked")
+    if tab is None or len(tab) == 0:
+        return []
+    tags = [str(t) for t in tab.tags]
+    try:
+        ci = next(i for i, t in enumerate(tags) if t.endswith("child_name"))
+        pi = next(i for i, t in enumerate(tags) if t.endswith("parent_name"))
+    except StopIteration:
+        return []
+    out: list[tuple[str, str]] = []
+    for r in range(len(tab)):
+        raw_c, raw_p = str(tab[r][ci]), str(tab[r][pi])
+        if raw_c.strip() in (".", "?", "") or raw_p.strip() in (".", "?", ""):
+            continue
+        child = quoted_token(raw_c)
+        parent = quoted_token(raw_p)
+        if child and parent:
+            out.append((child, parent))
+    return out
 
-    category_groups = load_category_groups(block)
-    raw_links = load_item_links(block)
 
+def load_item_links_from_item_linked(
+    block: gemmi.cif.Block, items: dict[str, dict]
+) -> list[dict[str, str]]:
+    """
+    Build link rows in the same shape as load_item_links(), using standard mmCIF _item_linked
+    tables in item save frames. Used when _pdbx_item_linked_group_list is absent (e.g. some extension dictionaries).
+    """
+    rows: list[dict[str, str]] = []
+
+    def category_for_item(item_name: str) -> str | None:
+        row = items.get(item_name)
+        if not row:
+            return None
+        cid = row.get("category_id")
+        return str(cid).strip() if cid else None
+
+    for it in block:
+        fr = it.frame
+        if not fr:
+            continue
+        name = fr.name
+        if not name.startswith("_"):
+            continue
+        for child_item, parent_item in _iter_item_linked_pairs(fr):
+            pc = category_for_item(parent_item)
+            cc = category_for_item(child_item)
+            if not pc or not cc:
+                continue
+            rows.append(
+                {
+                    "child_category_id": cc,
+                    "link_group_id": "item_linked",
+                    "child_name": child_item,
+                    "parent_name": parent_item,
+                    "parent_category_id": pc,
+                }
+            )
+    return rows
+
+
+def collect_categories_and_items(block: gemmi.cif.Block) -> tuple[dict[str, dict], dict[str, dict]]:
     categories: dict[str, dict] = {}
     items: dict[str, dict] = {}
 
@@ -167,6 +223,11 @@ def build_json(dic_path: Path) -> dict:
     for cid, c in categories.items():
         c["item_names"] = sorted(set(c.get("item_names") or []))
 
+    return categories, items
+
+
+def summarize_category_links(raw_links: list[dict[str, str]]) -> list[dict]:
+    """Deduplicate raw link rows into the graph edge list (same logic as build_json)."""
     edge_set: set[tuple[str, str, str]] = set()
     summarized_edges: list[dict] = []
     for L in raw_links:
@@ -184,6 +245,55 @@ def build_json(dic_path: Path) -> dict:
                 "child_item": L["child_name"],
             }
         )
+    return summarized_edges
+
+
+def compare_link_sources(dic_path: Path) -> None:
+    """Print how PDBx grouped links vs raw _item_linked differ for a .dic (diagnostic)."""
+    doc = gemmi.cif.read(str(dic_path))
+    block = doc.sole_block()
+    _categories, items = collect_categories_and_items(block)
+    pdbx_raw = load_item_links(block)
+    item_raw = load_item_links_from_item_linked(block, items)
+    sum_pdbx = summarize_category_links(pdbx_raw)
+    sum_item = summarize_category_links(item_raw)
+    triple_pdbx = {(e["parent"], e["child"], e["link_group_id"]) for e in sum_pdbx}
+    triple_item = {(e["parent"], e["child"], e["link_group_id"]) for e in sum_item}
+    pair_pdbx = {(e["parent"], e["child"]) for e in sum_pdbx}
+    pair_item = {(e["parent"], e["child"]) for e in sum_item}
+    print(f"Dictionary: {dic_path.name}")
+    print(f"  _pdbx_item_linked_group_list raw rows: {len(pdbx_raw)}  -> summarized edges: {len(sum_pdbx)}")
+    same_pair = pair_pdbx & pair_item
+    print(f"  _item_linked derived raw rows: {len(item_raw)}  -> summarized edges: {len(sum_item)}")
+    print(
+        f"  Unique (parent_cat, child_cat) pairs - PDBx: {len(pair_pdbx)}, "
+        f"item_linked: {len(pair_item)}, intersection: {len(same_pair)}"
+    )
+    only_pdbx = pair_pdbx - pair_item
+    only_item = pair_item - pair_pdbx
+    print(f"  Pairs only in PDBx list: {len(only_pdbx)}")
+    print(f"  Pairs only in _item_linked: {len(only_item)}")
+    print(f"  Triples (parent, child, link_group_id) - PDBx: {len(triple_pdbx)}, item_linked: {len(triple_item)}")
+    print(
+        "  Note: fallback uses link_group_id='item_linked' for all derived edges, "
+        "so one pair can become one edge; PDBx can split the same pair across groups."
+    )
+
+
+def build_json(dic_path: Path) -> dict:
+    doc = gemmi.cif.read(str(dic_path))
+    block = doc.sole_block()
+    version = clean_value(block.find_value("_dictionary.version")) or ""
+
+    category_groups = load_category_groups(block)
+
+    categories, items = collect_categories_and_items(block)
+
+    raw_links = load_item_links(block)
+    if not raw_links:
+        raw_links = load_item_links_from_item_linked(block, items)
+
+    summarized_edges = summarize_category_links(raw_links)
 
     by_parent: dict[str, list[dict]] = defaultdict(list)
     for e in summarized_edges:
@@ -203,6 +313,11 @@ def build_json(dic_path: Path) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description="Build dictionary JSON for mmCIF explorer")
     ap.add_argument(
+        "--compare-link-sources",
+        action="store_true",
+        help="Compare _pdbx_item_linked_group_list vs _item_linked edge sets, then exit (no JSON written).",
+    )
+    ap.add_argument(
         "--dic",
         type=Path,
         # Default to the local dictionary filename; the embedded `dictionary_version`
@@ -215,6 +330,9 @@ def main() -> None:
         default=Path(__file__).resolve().parent.parent / "app" / "data" / "mmcif_pdbx_v50.json",
     )
     args = ap.parse_args()
+    if args.compare_link_sources:
+        compare_link_sources(args.dic)
+        return
     args.out.parent.mkdir(parents=True, exist_ok=True)
     data = build_json(args.dic)
     args.out.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")

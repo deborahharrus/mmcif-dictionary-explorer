@@ -1,8 +1,8 @@
 # mmCIF dictionary explorer — development
 
-A small static web app for exploring the PDBx/mmCIF dictionary or any other mmCIF dictionary or dictionary extension. It shows **categories** as an interactive graph linked by `_pdbx_item_linked_group_list` relationships, and shows **items** (data names) with types, descriptions, enumerations, and examples.
+A small static web app for exploring the PDBx/mmCIF dictionary or any other mmCIF dictionary or dictionary extension. It shows **categories** as an interactive graph linked by `_pdbx_item_linked_group_list` when available, otherwise by `_item_linked`, and shows **items** (data names) with types, descriptions, enumerations, and examples.
 
-The published site loads **`app/data/mmcif_pdbx_v50.json`** by default, but the repository also includes other built-in pre-built JSON dictionaries from additional dictionary sources (switch them in the app’s dictionary drop-down). See **[README.md](README.md)** for the sources and `dictionary_version` values. Below are instructions on how to regenerate the JSON using the python script `scripts/build_dictionary_json.py`.
+The published site loads **`app/data/mmcif_pdbx_v50.json`** by default; other built-in dictionaries are selectable in the app’s dictionary drop-down. See **[README.md](README.md)** for sources and `dictionary_version` values. Below are instructions on how to regenerate the JSON using `scripts/build_dictionary_json.py`.
 
 ## Prerequisites
 
@@ -28,10 +28,31 @@ Defaults:
 - Input: `dictionaries/mmcif_pdbx_v50.dic`
 - Output: `app/data/mmcif_pdbx_v50.json`
 
+The script uses `_pdbx_item_linked_group_list` when present; if it is empty or missing (e.g. `mmcif_ihm_ext.dic`), it derives graph edges from `_item_linked`.
+
 Custom paths:
 
 ```bash
 python scripts/build_dictionary_json.py --dic path/to/your.dic --out app/data/your.json
+```
+
+Rebuild all shipped dictionaries (from `dictionaries/`):
+
+```bash
+python scripts/build_dictionary_json.py --dic dictionaries/mmcif_pdbx_v50.dic --out app/data/mmcif_pdbx_v50.json
+python scripts/build_dictionary_json.py --dic dictionaries/mmcif_pdbx_v5_next.dic --out app/data/mmcif_pdbx_v5_next.json
+python scripts/build_dictionary_json.py --dic dictionaries/mmcif_investigation_ligscreen.dic --out app/data/mmcif_investigation_ligscreen.json
+python scripts/build_dictionary_json.py --dic dictionaries/mmcif_ihm_ext.dic --out app/data/mmcif_ihm_ext.json
+```
+
+### Compare PDBx link table vs `_item_linked`
+
+For full PDBx dictionaries, the build uses `_pdbx_item_linked_group_list` when it exists; extensions may fall back to `_item_linked`. Those sources are **not identical**: the PDBx grouped list is richer (more category pairs and distinct `link_group_id` values), while the fallback collapses many item-level links into one synthetic group (`item_linked`) per `(parent_cat, child_cat)` key.
+
+To see counts and pair-wise differences for any `.dic` you have locally:
+
+```bash
+python scripts/build_dictionary_json.py --compare-link-sources --dic dictionaries/mmcif_pdbx_v50.dic
 ```
 
 ## Run locally

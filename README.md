@@ -1,6 +1,6 @@
 # mmCIF dictionary explorer
 
-A small, client-side tool for browsing [PDBx/mmCIF](https://mmcif.wwpdb.org/) dictionary content by default, while also accommodating other mmCIF dictionaries and dictionary extensions. Categories appear as an interactive graph (linked by `_pdbx_item_linked_group_list`); selecting a category or item shows definitions, types, enumerations, examples, and cross-links.
+A small, client-side tool for browsing [PDBx/mmCIF](https://mmcif.wwpdb.org/) dictionary content by default, while also accommodating other mmCIF dictionaries and dictionary extensions. Categories appear as an interactive graph (linked by `_pdbx_item_linked_group_list` when available, or by `_item_linked` for dictionaries without that table); selecting a category or item shows definitions, types, enumerations, examples, and cross-links.
 
 No build step for the UI: it is plain HTML, CSS, and JavaScript, with data loaded from a pre-built JSON file for the selected dictionary (switchable in the UI).
 
@@ -32,17 +32,19 @@ Upstream `.dic` files used to build the JSON in `app/data/` are obtained from th
 
 | Dictionary | Version in this repo | Description | Source `.dic` | JSON |
 |---|---|---|---|---|
-| PDBx/mmCIF Version 5.0 | `5.412` | PDB Exchange Dictionary (PDBx/mmCIF) Version 5.0 supporting the data files in the current PDB archive | `mmcif_pdbx_v50.dic` | `app/data/mmcif_pdbx_v50.json` |
-| PDBx/mmCIF Version 5.0 Development Version | `5.420` | PDB Exchange Dictionary (PDBx/mmCIF) Development Version | `mmcif_pdbx_v5_next.dic` | `app/data/mmcif_pdbx_v5_next.json` |
-| InvestigationCIF Extension | `1.0.6.1` | InvestigationCIF Extension, maintained at [github.com/PDBeurope/InvestigationCIF](https://github.com/PDBeurope/InvestigationCIF). It captures the relationship between related structures that are part of the same project. | `mmcif_investigation_ligscreen.dic` | `app/data/mmcif_investigation_ligscreen.json` |
-| IHMCIF extension | `1.28` | IHMCIF Extension, maintained at [github.com/ihmwg/IHMCIF](https://github.com/ihmwg/IHMCIF). Integrative structures that are compliant to this extension dictionary can be deposited to the PDB-Dev prototype deposition and archiving system ([pdb-ihm.wwpdb.org](https://pdb-ihm.wwpdb.org)). | `mmcif_ihm_ext.dic` | `app/data/mmcif_ihm_ext.json` |
+| PDBx/mmCIF Version 5.0 | `5.412` | PDB Exchange Dictionary (PDBx/mmCIF) Version 5.0 supporting the data files in the current PDB archive | `mmcif_pdbx_v50.dic` | `mmcif_pdbx_v50.json` |
+| PDBx/mmCIF Version 5.0 Development | `5.420` | PDB Exchange Dictionary (PDBx/mmCIF) Development Version | `mmcif_pdbx_v5_next.dic` | `mmcif_pdbx_v5_next.json` |
+| InvestigationCIF Extension | `1.0.6.1` | InvestigationCIF Extension, maintained at [github.com/PDBeurope/InvestigationCIF](https://github.com/PDBeurope/InvestigationCIF). It captures the relationship between related structures that are part of the same project. | `mmcif_investigation_ligscreen.dic` | `mmcif_investigation_ligscreen.json` |
+| IHMCIF Extension | `1.28` | IHMCIF Extension, maintained at [github.com/ihmwg/IHMCIF](https://github.com/ihmwg/IHMCIF). Integrative structures that are compliant to this extension dictionary can be deposited to the PDB-Dev prototype deposition and archiving system ([pdb-ihm.wwpdb.org](https://pdb-ihm.wwpdb.org)). | `mmcif_ihm_ext.dic` | `mmcif_ihm_ext.json` |
+
+Graph edges come from `_pdbx_item_linked_group_list` when that table is present; otherwise they are derived from `_item_linked` (as for `mmcif_ihm_ext.dic`).
 
 ## How to use the UI
 
 ### Graph
 
 - Each **dot** is a dictionary **category**.
-- **Size** reflects how many link rows in `_pdbx_item_linked_group_list` involve that category (see the legend for the exact scaling note).
+- **Size** reflects how many category link rows involve that category (from `_pdbx_item_linked_group_list` or, if absent, aggregated `_item_linked` rows; see the in-app legend).
 - **Colour** reflects the category’s primary PDBx **group** (first `_category_group` value that is not `inclusive_group`).
 - **Click a node** to open that category in the details panel.
 
