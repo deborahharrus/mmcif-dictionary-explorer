@@ -32,7 +32,7 @@ The JSON files under `app/data/` are derived from the upstream `.dic` dictionari
 
 | JSON artifact | Derived from `.dic` source | `dictionary_version` (in repo) |
 |---|---|---|
-| `app/data/mmcif_pdbx_v50.json` | wwPDB/PDBx [`mmcif_pdbx_v50.dic` (`Index`)](https://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Index/) | `5.411` |
+| `app/data/mmcif_pdbx_v50.json` | wwPDB/PDBx [`mmcif_pdbx_v50.dic`](https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic) | `5.411` |
 | `app/data/mmcif_ihm_ext.json` | IHMCIF [`mmcif_ihm_ext.dic`](https://github.com/ihmwg/IHMCIF/blob/master/dist/mmcif_ihm_ext.dic) | `1.28` |
 | `app/data/mmcif_investigation.json` | InvestigationCIF [`mmcif_investigation.dic`](https://github.com/PDBeurope/InvestigationCIF/blob/main/dist/mmcif_investigation.dic) | `1.0.6.1` |
 
