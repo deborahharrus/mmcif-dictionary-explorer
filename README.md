@@ -15,7 +15,7 @@ No build step for the UI: it is plain HTML, CSS, and JavaScript, with data loade
 
 ```text
      .----------------------------.
-     |     CLICK TO LAUNCH        |
+     |     CLICK TO LAUNCH the    |
      |  mmCIF dictionary explorer |
      '----------------------------'
                     |
