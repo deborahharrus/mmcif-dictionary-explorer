@@ -1,0 +1,18 @@
+[
+  {
+    "id": "default",
+    "label": "mmcif_pdbx_v50.json (default)",
+    "file": "mmcif_pdbx_v50.json"
+  },
+  {
+    "id": "investigation",
+    "label": "mmcif_investigation.json",
+    "file": "mmcif_investigation.json"
+  },
+  {
+    "id": "ihm_ext",
+    "label": "mmcif_ihm_ext.json",
+    "file": "mmcif_ihm_ext.json"
+  }
+]
+

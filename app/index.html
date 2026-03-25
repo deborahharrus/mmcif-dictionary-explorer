@@ -51,7 +51,7 @@
     }
     header .meta {
       font-family: "IBM Plex Mono", monospace;
-      font-size: 0.78rem;
+      font-size: 0.9rem;
       color: var(--muted);
     }
     .toolbar {
@@ -119,7 +119,7 @@
       width: 100%;
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-end;
+      align-items: flex-start;
       gap: 1rem 1.5rem;
       padding-top: 0.5rem;
     }
@@ -141,6 +141,16 @@
     }
     select#categorySelect {
       min-width: min(360px, 85vw);
+      padding: 0.4rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--text);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+    }
+    select#datasetSelect {
+      min-width: min(280px, 70vw);
       padding: 0.4rem 0.5rem;
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -429,6 +439,13 @@
     <span id="err" role="alert" aria-live="assertive"></span>
     <div class="header-tools">
       <div class="field">
+        <label for="datasetSelect">Select dictionary</label>
+        <select id="datasetSelect" aria-describedby="dataset-hint"></select>
+        <span id="dataset-hint" class="hint">
+          Select which pre-built JSON file to load (changes require a page reload).
+        </span>
+      </div>
+      <div class="field">
         <label for="q">Filter the graph</label>
         <input
           type="search"
@@ -497,7 +514,7 @@
         aria-controls="asidePanel"
         title="Collapse details panel"
       >
-        <span aria-hidden="true"><</span>
+        <span aria-hidden="true">></span>
       </button>
       <div class="aside-panel" id="asidePanel">
         <div class="detail-head">
@@ -516,6 +533,7 @@
     (async function () {
       const errEl = document.getElementById("err");
       const announceEl = document.getElementById("a11y-announce");
+      const datasetSelect = document.getElementById("datasetSelect");
       const categorySelect = document.getElementById("categorySelect");
       const detailBodyEl = document.getElementById("detailBody");
       const graphLegendBlock = document.getElementById("graph-legend-block");
@@ -561,19 +579,99 @@
       }
 
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const dataUrl = "data/dictionary.json";
+      const defaultDatasetFile = "mmcif_pdbx_v50.json";
+      const datasetsManifestUrl = "data/datasets.json";
       let DATA;
+
+      function normalizeDatasetFileParam(v) {
+        if (!v) return "";
+        const s = String(v).trim();
+        if (!s) return "";
+        if (s.startsWith("data/")) return s.slice("data/".length);
+        return s;
+      }
+
+      function getRequestedDatasetFile(datasets) {
+        const params = new URLSearchParams(window.location.search);
+        const requested = normalizeDatasetFileParam(params.get("dataset"));
+        if (!requested) return defaultDatasetFile;
+        // Prefer an exact match from the manifest, but allow fetching unknown files too.
+        const match = datasets.find((d) => d && d.file === requested);
+        return match ? match.file : requested;
+      }
+
+      function toDataUrl(datasetFile) {
+        const f = normalizeDatasetFileParam(datasetFile);
+        return f.startsWith("data/") ? f : "data/" + f;
+      }
+
+      let datasets = [{ id: "default", label: defaultDatasetFile, file: defaultDatasetFile }];
+      try {
+        const manifestRes = await fetch(datasetsManifestUrl);
+        if (manifestRes.ok) {
+          const parsed = await manifestRes.json();
+          if (Array.isArray(parsed) && parsed.length) {
+            datasets = parsed
+              .map((d) => ({
+                id: d && d.id ? String(d.id) : undefined,
+                label: d && d.label ? String(d.label) : undefined,
+                file: d && d.file ? String(d.file) : undefined,
+              }))
+              .filter((d) => d.file)
+              .map((d, idx) => ({
+                id: d.id || "ds" + idx,
+                label: d.label || d.file,
+                file: d.file,
+              }));
+          }
+        }
+      } catch (e) {
+        // Manifest is optional; we fall back to mmcif_pdbx_v50.json.
+      }
+
+      const requestedDatasetFile = getRequestedDatasetFile(datasets);
+
+      // Populate the dataset selector.
+      datasetSelect.innerHTML = "";
+      datasets.forEach(function (d) {
+        const opt = document.createElement("option");
+        opt.value = d.file;
+        opt.textContent = d.label;
+        datasetSelect.appendChild(opt);
+      });
+      // If the URL asked for a dataset not present in the manifest, still show it so the user understands why it failed (or to keep selection stable).
+      if (!datasets.some((d) => d.file === requestedDatasetFile)) {
+        const opt = document.createElement("option");
+        opt.value = requestedDatasetFile;
+        opt.textContent = requestedDatasetFile + " (custom)";
+        datasetSelect.appendChild(opt);
+      }
+      datasetSelect.value = requestedDatasetFile;
+
+      datasetSelect.addEventListener("change", function () {
+        const next = new URL(window.location.href);
+        next.searchParams.set("dataset", datasetSelect.value);
+        window.location.href = next.toString();
+      });
+
+      const dataUrl = toDataUrl(requestedDatasetFile);
       try {
         const res = await fetch(dataUrl);
         if (!res.ok) throw new Error(res.status + " " + res.statusText);
         DATA = await res.json();
       } catch (e) {
-        errEl.textContent = "Could not load " + dataUrl + " — run a local server from the app folder (e.g. python -m http.server 8080).";
+        errEl.textContent =
+          "Could not load " +
+          dataUrl +
+          ". Check the dataset selector / ?dataset= parameter. Also run a local server from the app folder (e.g. python -m http.server 8080) for local testing.";
         return;
       }
 
+      const selectedDatasetLabel =
+        datasetSelect.options[datasetSelect.selectedIndex]?.textContent || requestedDatasetFile;
+      const dictVersion = DATA.dictionary_version ?? "?";
       document.getElementById("versionMeta").textContent =
-        DATA.dictionary_file + " · v" + DATA.dictionary_version;
+        selectedDatasetLabel + " · v" + dictVersion;
 
       const cats = DATA.categories;
       const items = DATA.items;

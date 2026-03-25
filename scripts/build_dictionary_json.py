@@ -205,12 +205,14 @@ def main() -> None:
     ap.add_argument(
         "--dic",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "dictionaries" / "mmcif_pdbx_v50[5.411].dic",
+        # Default to the local dictionary filename; the embedded `dictionary_version`
+        # is read from the dictionary content itself.
+        default=Path(__file__).resolve().parent.parent / "dictionaries" / "mmcif_pdbx_v50.dic",
     )
     ap.add_argument(
         "--out",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "app" / "data" / "dictionary.json",
+        default=Path(__file__).resolve().parent.parent / "app" / "data" / "mmcif_pdbx_v50.json",
     )
     args = ap.parse_args()
     args.out.parent.mkdir(parents=True, exist_ok=True)
