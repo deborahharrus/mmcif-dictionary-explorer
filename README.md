@@ -13,9 +13,16 @@ No build step for the UI: it is plain HTML, CSS, and JavaScript, with data loade
 
 ## Use it
 
-<a href="https://deborahharrus.github.io/mmcif-dictionary-explorer/app/" style="display:inline-block;padding:12px 18px;background:#c9a227;color:#12151a;border-radius:10px;font-weight:700;text-decoration:none;letter-spacing:0.01em;font-size:1.05rem;">
-  Launch the mmCIF dictionary explorer
-</a>
+```text
+     .----------------------------.
+     |     CLICK TO LAUNCH        |
+     |  mmCIF dictionary explorer |
+     '----------------------------'
+                    |
+                    v
+```
+
+[![Launch dictionary explorer](https://img.shields.io/badge/Launch%20mmCIF%20dictionary%20explorer-5c5c5c?style=for-the-badge&logo=github&logoColor=white)](https://deborahharrus.github.io/mmcif-dictionary-explorer/app/)
 
 Tip: after launching, use the dictionary drop-down in the header to switch between the built-in JSON dictionaries.
 
