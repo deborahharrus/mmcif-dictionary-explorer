@@ -1,8 +1,8 @@
 # mmCIF dictionary explorer
 
-A small, client-side tool for browsing [PDBx/mmCIF](https://mmcif.wwpdb.org/) dictionary content. Categories appear as an interactive graph (linked by `_pdbx_item_linked_group_list`); selecting a category or item shows definitions, types, enumerations, examples, and cross-links.
+A small, client-side tool for browsing [PDBx/mmCIF](https://mmcif.wwpdb.org/) dictionary content by default, while also accommodating other mmCIF dictionaries and dictionary extensions. Categories appear as an interactive graph (linked by `_pdbx_item_linked_group_list`); selecting a category or item shows definitions, types, enumerations, examples, and cross-links.
 
-No build step for the UI: it is plain HTML, CSS, and JavaScript, with data loaded from a single JSON file.
+No build step for the UI: it is plain HTML, CSS, and JavaScript, with data loaded from a pre-built JSON file for the selected dictionary (switchable in the UI).
 
 ## Features
 
@@ -84,7 +84,7 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 
 This project’s source code is released under the [MIT License](LICENSE).
 
-This repository **does not** include the upstream dictionary source **`.dic`** files; only the derived **`app/data/*.json`** dictionary artifacts are distributed here.
+This repository **does not** include the upstream dictionary source **`.dic`** files. Only the derived **`app/data/*.json`** dictionary artifacts are distributed here. Follow the upstream licensing and citation requirements when sharing or reusing that dictionary content.
 
 ## Author
 

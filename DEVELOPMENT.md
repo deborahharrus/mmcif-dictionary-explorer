@@ -13,6 +13,8 @@ The published site loads **`app/data/mmcif_pdbx_v50.json`** by default, but the 
   pip install -r requirements.txt
   ```
 
+Note: the upstream `.dic` files are not included in this published repo (they are gitignored). Download/copy the needed `.dic` files into `dictionaries/` locally before running `scripts/build_dictionary_json.py` (e.g. `mmcif_pdbx_v50.dic`, `mmcif_ihm_ext.dic`, `mmcif_investigation.dic`).
+
 ## Build `*.json`
 
 Regenerate whenever a dictionary file is updated, or to add another `.dic`:
@@ -49,7 +51,7 @@ Then open **http://127.0.0.1:8765/** in your browser (any free port is fine).
 
 | Path | Purpose |
 |------|--------|
-| `dictionaries/*.dic` | Source od the dictionary files. |
+| `dictionaries/*.dic` | Source of the dictionary files. |
 | `scripts/build_dictionary_json.py` | Parses the `.dic` files with gemmi and writes JSON. |
 | `app/index.html` | Single-page UI. |
 | `app/data/*.json` | Data consumed by the UI. |
@@ -58,7 +60,7 @@ Then open **http://127.0.0.1:8765/** in your browser (any free port is fine).
 
 This project’s source code is released under the [MIT License](LICENSE).
 
-This repository **does not** include the upstream dictionary source **`.dic`** files; only the derived **`app/data/*.json`** dictionary artifacts are distributed here.
+This repository **does not** include the upstream dictionary source **`.dic`** files. Only the derived **`app/data/*.json`** dictionary artifacts are distributed here. Follow the upstream licensing and citation requirements when sharing or reusing that dictionary content.
 
 ## Author
 
